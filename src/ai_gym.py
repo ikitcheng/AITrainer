@@ -61,7 +61,8 @@ class AIGym(BaseSolution):
         self.start_frames = []  # Frame number when movement starts
         self.start_positions = []  # Starting Y position
         self.power_outputs = []  # Power output for each rep
-        self.rep_durations = []  # List of rep durations for each person
+        self.avg_power = []  # Average power output
+        self.rep_durations = []  # List of rep durations
         self.user_mass = kwargs.get('user_mass', 70.0)  # User mass in kg
         self.displacement = kwargs.get('displacement', 0.6)  # Rep displacement in meters
         self.fps = kwargs.get('fps', 30.0)  # Video FPS
@@ -85,7 +86,7 @@ class AIGym(BaseSolution):
         power = work / time_taken
         return power
 
-    def monitor(self, im0):
+    def monitor(self, im0, is_display:bool=False):
         """
         Monitors workouts using Ultralytics YOLO Pose Model.
 
@@ -95,6 +96,7 @@ class AIGym(BaseSolution):
 
         Args:
             im0 (ndarray): Input image for processing.
+            is_dispaly (bool): Display the output
 
         Returns:
             (ndarray): Processed image with annotations for workout monitoring.
@@ -121,13 +123,14 @@ class AIGym(BaseSolution):
                 self.start_frames += [0] * new_human
                 self.start_positions += [0] * new_human
                 self.power_outputs += [0] * new_human
+                self.avg_power += [0] * new_human
                 self.rep_durations += [[]] * new_human
 
             # Initialize annotator
             self.annotator = Annotator(im0, line_width=self.lw)
 
             # Enumerate over 17 keypoints, each with (x,y,visible) values
-            for ind, k in enumerate(reversed(tracks.keypoints.data)): # (-1, 17, 3)
+            for ind, k in enumerate(reversed(tracks.keypoints.data)): # (nPerson, 17, 3)
                 # Get keypoints and estimate the angle
                 kpts = [k[int(self.kpts[i])].cpu() for i in range(len(self.kpts))]
                 self.angle[ind] = self.annotator.estimate_pose_angle(*kpts)
@@ -176,9 +179,9 @@ class AIGym(BaseSolution):
                 # Display comprehensive information
                 if ind < len(self.power_outputs) and self.power_outputs[ind] > 0:
                     # Calculate average power if we have multiple reps
-                    avg_power = 0
+                    self.avg_power[ind] = 0
                     if ind < len(self.rep_durations) and len(self.rep_durations[ind]) > 0:
-                        avg_power = np.mean([self.calculate_power(self.displacement, dt) for dt in self.rep_durations[ind]])
+                        self.avg_power[ind] = np.mean([self.calculate_power(self.displacement, dt) for dt in self.rep_durations[ind]])
                     
                     # Get image dimensions for positioning
                     img_h, img_w = im0.shape[:2]
@@ -190,7 +193,7 @@ class AIGym(BaseSolution):
                         f"dh: {self.displacement:.2f} m",  # Distance
                         f"t: {self.rep_durations[ind][-1]:.2f} s" if self.rep_durations[ind] else "",  # Time in seconds
                         f"Rep Power: {self.power_outputs[ind]:.0f} W",  # Result
-                        f"Avg Power: {avg_power:.0f} W" if avg_power > 0 else ""  # Average power in W
+                        f"Avg Power: {self.avg_power[ind]:.0f} W" if self.avg_power[ind] > 0 else ""  # Average power in W
                     ]
                     
                     # Position text at bottom left with smaller font
@@ -217,5 +220,6 @@ class AIGym(BaseSolution):
                 #     center_kpt=k[int(self.kpts[1])],  # center keypoint for display
                 # )
 
-        self.display_output(im0)  # Display output image, if environment support display
+        if is_display:
+            self.display_output(im0)  # Display output image, if environment support display
         return im0  # return an image for writing or further usage
