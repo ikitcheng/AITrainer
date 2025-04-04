@@ -1,7 +1,10 @@
 import os
 import cv2
 from pathlib import Path
-from ai_gym import AIGym
+import sys
+# Add parent directory to path to import workout_monitoring
+sys.path.append(str(Path(__file__).parent.parent))
+from src.ai_gym import AIGym
 
 def process_video(video_path: str, mass: float, exercise_type: str = "pullups", displacement: float = 0.6, is_display:bool=False) -> dict:
     """
@@ -29,7 +32,7 @@ def process_video(video_path: str, mass: float, exercise_type: str = "pullups", 
     
     # Create output video writer
     output_path = os.path.join(output_dir, f"processed_{os.path.basename(video_path)}")
-    # video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
+    video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
 
     # Initialize AIGym
     root = Path(__file__).parent.parent
@@ -47,7 +50,6 @@ def process_video(video_path: str, mass: float, exercise_type: str = "pullups", 
     )
 
     max_power = 0
-    total_power = 0
     rep_count = 0
 
     while cap.isOpened():
@@ -57,7 +59,7 @@ def process_video(video_path: str, mass: float, exercise_type: str = "pullups", 
 
         # Process frame with AIGym to detect pose and calculate power
         im0 = gym.monitor(im0, is_display)
-        # video_writer.write(im0)
+        video_writer.write(im0)
 
         # Update metrics if available
         if hasattr(gym, 'power_outputs') and len(gym.power_outputs) > 0:
@@ -75,7 +77,7 @@ def process_video(video_path: str, mass: float, exercise_type: str = "pullups", 
             break
 
     cv2.destroyAllWindows()
-    # video_writer.release()
+    video_writer.release()
     cap.release()
 
     return {
@@ -92,7 +94,7 @@ if __name__ == "__main__":
     root = Path(__file__).parent.parent
     video_path = str(root / "data/pullups.mp4")
     mass = 63.0  # kg
-    metrics = process_video(video_path, mass=mass, is_display=True)
+    metrics = process_video(video_path, mass=mass, exercise_type='pullups', is_display=False)
     print(f"Processed video metrics:")
     print(f"Reps: {metrics['rep_count']}")
     print(f"Average Power: {metrics['avg_power']:.1f} W")
