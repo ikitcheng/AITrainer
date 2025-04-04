@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-md-8 mx-auto text-center">
+            <h1 class="display-4 mb-4">AI-Powered Workout Tracking</h1>
+            <p class="lead mb-4">Track your workout performance with advanced AI pose estimation and power calculations. Compare your progress with others on our global leaderboard.</p>
+            {% if not current_user.is_authenticated %}
+            <div class="d-grid gap-2 d-md-flex justify-content-center">
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 me-md-2">Get Started</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg px-4">Login</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="card-title">AI Pose Detection</h3>
+                    <p class="card-text">Advanced computer vision technology to accurately track your movements and count repetitions.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="card-title">Power Calculations</h3>
+                    <p class="card-text">Calculate your power output and compare performance across different body weights.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="card-title">Global Leaderboard</h3>
+                    <p class="card-text">Compete with athletes worldwide and track your progress over time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Workouts Section -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Top 10 Athletes</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('leaderboard') }}" class="btn btn-outline-primary">View Full Leaderboard</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>User</th>
+                            <th>Exercise</th>
+                            <th>Reps</th>
+                            <th>Max Power/kg (W/kg)</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for workout in workouts %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ workout.user.username }}</td>
+                            <td>{{ workout.exercise_type|title }}</td>
+                            <td>{{ workout.rep_count }}</td>
+                            <td>{{ "%.2f"|format(workout.max_power_per_kg) }}</td>
+                            <td>{{ workout.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">No workouts found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    {% if not current_user.is_authenticated %}
+    <div class="row mt-5">
+        <div class="col-md-8 mx-auto text-center">
+            <h2 class="mb-4">Ready to Start Tracking?</h2>
+            <p class="lead mb-4">Join our community of athletes and start tracking your workout performance today.</p>
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Create Your Account</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

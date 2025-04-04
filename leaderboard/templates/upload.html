@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Workout{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">Upload Workout Video</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="video" class="form-label">Video File</label>
+                        <input type="file" class="form-control" id="video" name="video" accept=".mp4,.avi,.mov" required>
+                        <div class="form-text">Supported formats: MP4, AVI, MOV</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="mass" class="form-label">Your Mass (kg)</label>
+                        <input type="number" class="form-control" id="mass" name="mass" step="0.1" min="30" max="200" required>
+                        <div class="form-text">Enter your body mass in kilograms</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="exercise_type" class="form-label">Exercise Type</label>
+                        <select class="form-select" id="exercise_type" name="exercise_type" required>
+                            <option value="pullups">Pull-ups</option>
+                            <option value="pushups">Push-ups (Experimental)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_public" name="is_public">
+                        <label class="form-check-label" for="is_public">Share on Public Leaderboard</label>
+                        <div class="form-text">Your workout will be visible to other users if checked</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Upload and Process</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>My Workout Dashboard</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('upload') }}" class="btn btn-primary">Upload New Workout</a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Workouts</h5>
+                    <p class="card-text display-4">{{ workouts|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Best Power/kg</h5>
+                    <p class="card-text display-4">
+                        {{ "%.2f"|format(best_power) }}
+                        <small class="text-muted">W/kg</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Reps</h5>
+                    <p class="card-text display-4">{{ total_reps }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if exercise_powers %}
+    <div class="row mb-4">
+        <div class="col">
+            <h3>Best Power by Exercise</h3>
+        </div>
+    </div>
+    <div class="row mb-4">
+        {% for exercise, power in exercise_powers.items() %}
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ exercise|title }}</h5>
+                    <p class="card-text display-4">
+                        {{ "%.2f"|format(power) }}
+                        <small class="text-muted">W/kg</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">My Workouts</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Exercise</th>
+                                    <th>Reps</th>
+                                    <th>Max Power/kg</th>
+                                    <th>Avg Power/kg</th>
+                                    <th>Public</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for workout in workouts %}
+                                <tr>
+                                    <td>{{ workout.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ workout.exercise_type|title }}</td>
+                                    <td>{{ workout.rep_count }}</td>
+                                    <td>{{ "%.2f"|format(workout.max_power_per_kg) }}</td>
+                                    <td>{{ "%.2f"|format(workout.avg_power_per_kg) }}</td>
+                                    <td>
+                                        {% if workout.is_public %}
+                                            <span class="badge bg-success">Public</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Private</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('toggle_visibility', workout_id=workout.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                {% if workout.is_public %}Make Private{% else %}Make Public{% endif %}
+                                            </button>
+                                        </form>
+                                        <form method="GET" action="{{ url_for('download_video', workout_id=workout.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                Download
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('delete_workout', workout_id=workout.id) }}" class="d-inline" onsubmit="return confirm('Delete this workout?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center">No workouts uploaded yet</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
