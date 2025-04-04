@@ -10,7 +10,23 @@
                 <h2 class="mb-0">Upload Workout Video</h2>
             </div>
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
+                <!-- Progress bar (hidden by default) -->
+                <div id="uploadProgress" class="mb-4" style="display: none;">
+                    <h5>Uploading and Processing Video...</h5>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             aria-valuenow="0" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100" 
+                             style="width: 0%">
+                            <span id="progressText">0%</span>
+                        </div>
+                    </div>
+                    <small class="text-muted" id="uploadStatus">Preparing upload...</small>
+                </div>
+
+                <form id="uploadForm" method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="video" class="form-label">Video File</label>
                         <input type="file" class="form-control" id="video" name="video" accept=".mp4,.avi,.mov" required>
@@ -37,10 +53,79 @@
                         <div class="form-text">Your workout will be visible to other users if checked</div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Upload and Process</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Upload and Process</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Show progress bar
+    document.getElementById('uploadProgress').style.display = 'block';
+    document.getElementById('submitBtn').disabled = true;
+    
+    // Get form data
+    const formData = new FormData(this);
+    const xhr = new XMLHttpRequest();
+    
+    // Track upload progress
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            const progressBar = document.querySelector('.progress-bar');
+            const progressText = document.getElementById('progressText');
+            const uploadStatus = document.getElementById('uploadStatus');
+            
+            progressBar.style.width = percentComplete + '%';
+            progressBar.setAttribute('aria-valuenow', percentComplete);
+            progressText.textContent = Math.round(percentComplete) + '%';
+            
+            if (percentComplete === 100) {
+                uploadStatus.textContent = 'Processing video... This may take a few minutes.';
+                // Keep progress bar animated
+                progressBar.style.width = '100%';
+            } else {
+                uploadStatus.textContent = 'Uploading video...';
+            }
+        }
+    });
+    
+    // Handle response
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                // Redirect to the response URL (should be dashboard)
+                window.location.href = xhr.responseURL;
+            } else {
+                // Show error
+                document.getElementById('uploadStatus').textContent = 'Error occurred during upload. Please try again.';
+                document.getElementById('submitBtn').disabled = false;
+                // Reset progress bar
+                document.querySelector('.progress-bar').style.width = '0%';
+                document.getElementById('progressText').textContent = '0%';
+            }
+        }
+    };
+    
+    // Send request
+    xhr.open('POST', '{{ url_for("upload") }}', true);
+    xhr.send(formData);
+});
+
+// Preview file size before upload
+document.getElementById('video').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const fileSizeMB = file.size / (1024 * 1024);
+        if (fileSizeMB > 16) {
+            alert('File size exceeds 16MB limit. Please choose a smaller file.');
+            this.value = '';
+        }
+    }
+});
+</script>
 {% endblock %} 
