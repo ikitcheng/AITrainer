@@ -33,10 +33,21 @@
                         <div class="form-text">Supported formats: MP4, AVI, MOV</div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="mass" class="form-label">Your Mass (kg)</label>
-                        <input type="number" class="form-control" id="mass" name="mass" step="0.1" min="30" max="200" required>
-                        <div class="form-text">Enter your body mass in kilograms</div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="body_mass" class="form-label">Your Mass (kg)</label>
+                                <input type="number" class="form-control" id="body_mass" name="body_mass" step="0.1" min="30" max="200" required>
+                                <div class="form-text">Enter your body mass in kilograms</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="exercise_mass" class="form-label">Exercise Mass (kg)</label>
+                                <input type="number" class="form-control" id="exercise_mass" name="exercise_mass" step="0.1" min="0" max="200" required>
+                                <div class="form-text">Enter the mass being lifted in kilograms</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-3">

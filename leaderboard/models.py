@@ -19,8 +19,9 @@ class User(UserMixin, db.Model):
 class Workout(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    body_mass = db.Column(db.Float, nullable=False)  # User's body mass in kg
+    exercise_mass = db.Column(db.Float, nullable=False)  # Mass being lifted in kg
     exercise_type = db.Column(db.String(50), nullable=False)
-    mass = db.Column(db.Float, nullable=False)  # User's mass in kg
     rep_count = db.Column(db.Integer, nullable=False)
     avg_power = db.Column(db.Float, nullable=False)  # Average power in Watts
     max_power = db.Column(db.Float, nullable=False)  # Maximum power in Watts
@@ -30,8 +31,5 @@ class Workout(db.Model):
     is_public = db.Column(db.Boolean, default=False)  # Whether to show on leaderboard
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def calculate_power_metrics(self):
-        """Calculate power per kg metrics"""
-        if self.mass > 0:
-            self.avg_power_per_kg = self.avg_power / self.mass
-            self.max_power_per_kg = self.max_power / self.mass 
+    def __repr__(self):
+        return f'<Workout {self.id}>'

@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
+from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
@@ -33,6 +34,9 @@ login_manager.login_view = 'login'
 
 # Initialize database
 db.init_app(app)
+
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
 # Initialize Flask-Admin
 admin = Admin(app, name='AI Trainer Admin', template_mode='bootstrap4')
@@ -179,7 +183,8 @@ def upload():
             file.save(filepath)
             
             # Process video and get workout metrics
-            mass = float(request.form['mass'])
+            body_mass = float(request.form['body_mass'])
+            exercise_mass = float(request.form['exercise_mass'])
             exercise_type = request.form['exercise_type']
             is_public = 'is_public' in request.form
             
@@ -187,22 +192,24 @@ def upload():
                 # Process video using workout_monitoring.py
                 metrics = process_video(
                     filepath,
-                    mass=mass,
-                    exercise_type=exercise_type
+                    body_mass=body_mass,
+                    exercise_mass=exercise_mass,
+                    exercise_type=exercise_type,
                 )
                 
                 # Create workout entry
                 workout = Workout(
                     user_id=current_user.id,
+                    body_mass=body_mass,
+                    exercise_mass=exercise_mass,
                     exercise_type=exercise_type,
-                    mass=mass,
                     rep_count=metrics['rep_count'],
                     avg_power=metrics['avg_power'],
                     max_power=metrics['max_power'],
-                    avg_power_per_kg=metrics['avg_power'] / mass,
-                    max_power_per_kg=metrics['max_power'] / mass,
+                    avg_power_per_kg=metrics['avg_power_per_kg'],
+                    max_power_per_kg=metrics['max_power_per_kg'],
                     video_path=metrics['processed_video_path'],
-                    is_public=is_public
+                    is_public=is_public,
                 )
                 
                 db.session.add(workout)

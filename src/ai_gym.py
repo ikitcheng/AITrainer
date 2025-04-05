@@ -27,13 +27,13 @@ class AIGym(BaseSolution):
         start_positions (List[float]): Starting Y position.
         power_outputs (List[float]): Power output for each rep.
         rep_durations (List[List[float]]): List of rep durations.
-        user_mass (float): User mass in kg.
+        exercise_mass (float): User mass in kg.
         displacement (float): Rep displacement in meters.
         fps (float): Video FPS.
         frame_count (int): Current frame number.
 
     Methods:
-        calculate_power: Calculates power output based on mass, distance, and time.
+        calculate_power: Calculates power output based on exercise mass, distance, and time.
         monitor: Processes a frame to detect poses, calculate angles, and count repetitions.
 
     Examples:
@@ -62,8 +62,9 @@ class AIGym(BaseSolution):
         self.start_positions = []  # Starting Y position
         self.power_outputs = []  # Power output for each rep
         self.avg_power = []  # Average power output
+        self.max_power = []  # Maximum power output
         self.rep_durations = []  # List of rep durations
-        self.user_mass = kwargs.get('user_mass', 70.0)  # User mass in kg
+        self.exercise_mass = kwargs.get('exercise_mass', 70.0)  # Exercise mass in kg
         self.displacement = kwargs.get('displacement', 0.6)  # Rep displacement in meters
         self.fps = kwargs.get('fps', 30.0)  # Video FPS
         self.frame_count = 0  # Current frame number
@@ -78,11 +79,11 @@ class AIGym(BaseSolution):
             self.pose_type = kwargs["pose_type"]
 
     def calculate_power(self, vertical_distance: float, time_taken: float):
-        """Calculate power output based on mass, distance, and time."""
+        """Calculate power output based on exercise mass, distance, and time."""
         if time_taken <= 0:
             return 0
         g = 9.81  # m/s²
-        work = self.user_mass * g * vertical_distance
+        work = self.exercise_mass * g * vertical_distance
         power = work / time_taken
         return power
 
@@ -115,16 +116,17 @@ class AIGym(BaseSolution):
         if tracks.boxes.id is not None:
             # Extract and check keypoints
             print("Number of tracks:", len(tracks), "Number of rep counters:", len(self.count))
-            if len(tracks) > len(self.count):
+            if len(tracks) > len(self.count): # 1st frame len(self.count) is 0
                 new_human = len(tracks) - len(self.count)
                 self.angle += [0] * new_human
                 self.count += [0] * new_human
                 self.stage += ["-"] * new_human
                 self.start_frames += [0] * new_human
                 self.start_positions += [0] * new_human
-                self.power_outputs += [0] * new_human
-                self.avg_power += [0] * new_human
                 self.rep_durations += [[]] * new_human
+                self.power_outputs += [[]] * new_human
+                self.avg_power += [0] * new_human
+                self.max_power += [0] * new_human
 
             # Initialize annotator
             self.annotator = Annotator(im0, line_width=self.lw)
@@ -153,9 +155,10 @@ class AIGym(BaseSolution):
                                 frames_elapsed = self.frame_count - self.start_frames[ind]
                                 duration = frames_elapsed / self.fps
                                 
-                                # Calculate power
+                                # Calculate and store power
                                 power = self.calculate_power(self.displacement, duration)
-                                self.power_outputs[ind] = power
+                                if ind < len(self.power_outputs):
+                                    self.power_outputs[ind].append(power)
                                 
                                 # Store duration
                                 if ind < len(self.rep_durations):
@@ -177,11 +180,13 @@ class AIGym(BaseSolution):
                 im0 = self.annotator.draw_specific_points(k, draw_kpts, radius=self.lw)
 
                 # Display comprehensive information
-                if ind < len(self.power_outputs) and self.power_outputs[ind] > 0:
-                    # Calculate average power if we have multiple reps
+                if ind < len(self.power_outputs) and len(self.power_outputs[ind]) > 0:
+                    # Calculate average and max power if we have multiple reps
                     self.avg_power[ind] = 0
+                    self.max_power[ind] = 0
                     if ind < len(self.rep_durations) and len(self.rep_durations[ind]) > 0:
-                        self.avg_power[ind] = np.mean([self.calculate_power(self.displacement, dt) for dt in self.rep_durations[ind]])
+                        self.avg_power[ind] = np.mean(self.power_outputs[ind])
+                        self.max_power[ind] = np.max(self.power_outputs[ind])
                     
                     # Get image dimensions for positioning
                     img_h, img_w = im0.shape[:2]
@@ -189,11 +194,12 @@ class AIGym(BaseSolution):
                     # Format text for display
                     info_text = [
                         f"Reps: {self.count[ind]}", # Reps
-                        f"m: {self.user_mass:.0f} kg",  # Mass in kg
+                        f"m: {self.exercise_mass:.0f} kg",  # Mass in kg
                         f"dh: {self.displacement:.2f} m",  # Distance
                         f"t: {self.rep_durations[ind][-1]:.2f} s" if self.rep_durations[ind] else "",  # Time in seconds
-                        f"Rep Power: {self.power_outputs[ind]:.0f} W",  # Result
-                        f"Avg Power: {self.avg_power[ind]:.0f} W" if self.avg_power[ind] > 0 else ""  # Average power in W
+                        f"Rep Power: {self.power_outputs[ind][-1]:.0f} W",  # Result
+                        f"Max Power: {self.max_power[ind]:.0f} W" if self.max_power[ind] > 0 else "",  # Max power in W
+                        f"Avg Power: {self.avg_power[ind]:.0f} W" if self.avg_power[ind] > 0 else "", # Average power in W
                     ]
                     
                     # Position text at bottom left with smaller font

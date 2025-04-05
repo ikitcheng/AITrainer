@@ -78,6 +78,8 @@
                             <thead>
                                 <tr>
                                     <th>Date</th>
+                                    <th>Body Mass (kg)</th>
+                                    <th>Exercise Mass (kg)</th>
                                     <th>Exercise</th>
                                     <th>Reps</th>
                                     <th>Max Power/kg</th>
@@ -90,6 +92,8 @@
                                 {% for workout in workouts %}
                                 <tr>
                                     <td>{{ workout.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ workout.body_mass }}</td>
+                                    <td>{{ workout.exercise_mass }}</td>
                                     <td>{{ workout.exercise_type|title }}</td>
                                     <td>{{ workout.rep_count }}</td>
                                     <td>{{ "%.2f"|format(workout.max_power_per_kg) }}</td>

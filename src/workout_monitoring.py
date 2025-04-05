@@ -6,13 +6,14 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 from src.ai_gym import AIGym
 
-def process_video(video_path: str, mass: float, exercise_type: str = "pullups", displacement: float = 0.6, is_display:bool=False) -> dict:
+def process_video(video_path: str, body_mass: float, exercise_mass: float, exercise_type: str = "pullups", displacement: float = 0.6, is_display:bool=False) -> dict:
     """
     Process a workout video and return metrics.
     
     Args:
         video_path: Path to the video file
-        mass: User's mass in kg
+        body_mass: User's mass in kg
+        exercise_mass: Mass being lifted in exercise (in kg)
         exercise_type: Type of exercise (default: "pullups")
         displacement: Vertical displacement in meters (default: 0.6)
     
@@ -44,13 +45,14 @@ def process_video(video_path: str, mass: float, exercise_type: str = "pullups", 
         down_angle=145,
         pose_type=exercise_type,
         model=f"{str(root)}/model/yolo11n-pose.pt",
-        user_mass=mass,
+        exercise_mass=exercise_mass,
         displacement=displacement,
         fps=fps
     )
 
-    max_power = 0
     rep_count = 0
+    avg_power = 0
+    max_power = 0
 
     while cap.isOpened():
         success, im0 = cap.read()
@@ -61,17 +63,15 @@ def process_video(video_path: str, mass: float, exercise_type: str = "pullups", 
         im0 = gym.monitor(im0, is_display)
         video_writer.write(im0)
 
-        # Update metrics if available
-        if hasattr(gym, 'power_outputs') and len(gym.power_outputs) > 0:
-            current_power = gym.power_outputs[0]
-            if current_power > max_power:
-                max_power = current_power
-        
+        # Update metrics if available        
         if hasattr(gym, 'count') and len(gym.count) > 0:
             rep_count = gym.count[0]
         
         if hasattr(gym, 'avg_power') and len(gym.avg_power) > 0:
             avg_power = gym.avg_power[0]
+        
+        if hasattr(gym, 'max_power') and len(gym.max_power) > 0:
+            max_power = gym.max_power[0]
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -84,17 +84,18 @@ def process_video(video_path: str, mass: float, exercise_type: str = "pullups", 
         'rep_count': rep_count,
         'avg_power': avg_power,
         'max_power': max_power,
-        'avg_power_per_kg': avg_power / mass if mass > 0 else 0,
-        'max_power_per_kg': max_power / mass if mass > 0 else 0,
+        'avg_power_per_kg': avg_power / body_mass if body_mass > 0 else 0,
+        'max_power_per_kg': max_power / body_mass if body_mass > 0 else 0,
         'processed_video_path': output_path
     }
 
 if __name__ == "__main__":
     # Example usage
     root = Path(__file__).parent.parent
-    video_path = str(root / "data/pullups.mp4")
-    mass = 63.0  # kg
-    metrics = process_video(video_path, mass=mass, exercise_type='pullups', is_display=False)
+    video_path = str(root / "data/weighted_pullups.mp4")
+    body_mass = 63.0  # kg
+    exercise_mass = 95.0 # kg
+    metrics = process_video(video_path, body_mass=body_mass, exercise_mass=exercise_mass, exercise_type='pullups', is_display=False)
     print(f"Processed video metrics:")
     print(f"Reps: {metrics['rep_count']}")
     print(f"Average Power: {metrics['avg_power']:.1f} W")

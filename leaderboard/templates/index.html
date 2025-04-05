@@ -64,6 +64,7 @@
                         <tr>
                             <th>Rank</th>
                             <th>User</th>
+                            <th>Exercise Mass (kg)</th>
                             <th>Exercise</th>
                             <th>Reps</th>
                             <th>Max Power/kg (W/kg)</th>
@@ -75,6 +76,7 @@
                         <tr>
                             <td>{{ loop.index }}</td>
                             <td>{{ workout.user.username }}</td>
+                            <td>{{ workout.exercise_mass }}</td>
                             <td>{{ workout.exercise_type|title }}</td>
                             <td>{{ workout.rep_count }}</td>
                             <td>{{ "%.2f"|format(workout.max_power_per_kg) }}</td>
