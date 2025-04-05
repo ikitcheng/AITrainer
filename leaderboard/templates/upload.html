@@ -88,6 +88,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
                 uploadStatus.textContent = 'Processing video... This may take a few minutes.';
                 // Keep progress bar animated
                 progressBar.style.width = '100%';
+                progressText.textContent = 'Processing...';
             } else {
                 uploadStatus.textContent = 'Uploading video...';
             }
