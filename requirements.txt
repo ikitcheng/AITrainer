@@ -2,3 +2,4 @@ moviepy==1.0.3
 opencv_python==4.10.0.84
 numpy==1.21.6
 ultralytics==8.3.18
+apscheduler==3.10.4

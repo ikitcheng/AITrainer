@@ -5,11 +5,12 @@ from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, timedelta
 import cv2
 import numpy as np
 import sys
 from pathlib import Path
+from apscheduler.schedulers.background import BackgroundScheduler
 # Add parent directory to path to import workout_monitoring
 sys.path.append(str(Path(__file__).parent.parent))
 from src.workout_monitoring import process_video
@@ -302,8 +303,50 @@ def create_admin_user():
             db.session.add(admin)
             db.session.commit()
 
+def cleanup_old_videos():
+    """Delete processed videos older than 7 days and update database records."""
+    with app.app_context():
+        # Calculate the cutoff date
+        days = 1
+        cutoff_date = datetime.now() - timedelta(days=days)
+
+        # Get all workouts older than predefined days that have video files
+        old_workouts = Workout.query.filter(
+            Workout.created_at < cutoff_date,
+            Workout.video_path.isnot(None)
+        ).all()
+        
+        for workout in old_workouts:
+            # Check if video file exists
+            if workout.video_path and os.path.exists(workout.video_path):
+                try:
+                    # Delete the video file
+                    os.remove(workout.video_path)
+                    # Update the workout record
+                    workout.video_path = None
+                    app.logger.info(f"Deleted old video for workout ID {workout.id}")
+                except Exception as e:
+                    app.logger.error(f"Error deleting video for workout ID {workout.id}: {str(e)}")
+        
+        # Commit all changes to the database
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error updating database after video cleanup: {str(e)}")
+
+# Initialize the scheduler (run once a day)
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=cleanup_old_videos, trigger="interval", days=1)
+scheduler.start()
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         create_admin_user()
+        cleanup_old_videos()
     app.run(debug=True, use_reloader=False)
+
+# Ensure scheduler is shut down when the app exits
+import atexit
+atexit.register(lambda: scheduler.shutdown())
