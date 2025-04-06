@@ -26,6 +26,15 @@ def process_video(video_path: str, body_mass: float, exercise_mass: float, exerc
     cap = cv2.VideoCapture(video_path)
     assert cap.isOpened(), "Error reading video file"
     w, h, fps = (int(cap.get(x)) for x in (cv2.CAP_PROP_FRAME_WIDTH, cv2.CAP_PROP_FRAME_HEIGHT, cv2.CAP_PROP_FPS))
+    print("Original resolution:", w, h)
+    max_resolution = (640, 480)
+    if h > w:
+        max_resolution = (480, 640)
+        
+    scale = min(max_resolution[0] / w, max_resolution[1] / h)
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    print("New resolution:", new_w, new_h)
 
     # Create output directory if it doesn't exist
     output_dir = os.path.join(os.path.dirname(video_path), 'processed')
@@ -33,7 +42,7 @@ def process_video(video_path: str, body_mass: float, exercise_mass: float, exerc
     
     # Create output video writer
     output_path = os.path.join(output_dir, f"processed_{os.path.basename(video_path)}")
-    video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
+    video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (new_w, new_h))
 
     # Initialize AIGym
     root = Path(__file__).parent.parent
@@ -58,6 +67,9 @@ def process_video(video_path: str, body_mass: float, exercise_mass: float, exerc
         success, im0 = cap.read()
         if not success:
             break
+        
+        # resize video to 480p
+        im0 = cv2.resize(im0, (new_w, new_h))
 
         # Process frame with AIGym to detect pose and calculate power
         im0 = gym.monitor(im0, is_display)
@@ -92,9 +104,9 @@ def process_video(video_path: str, body_mass: float, exercise_mass: float, exerc
 if __name__ == "__main__":
     # Example usage
     root = Path(__file__).parent.parent
-    video_path = str(root / "data/weighted_pullups.mp4")
+    video_path = str(root / "data/pullups.mp4")
     body_mass = 63.0  # kg
-    exercise_mass = 95.0 # kg
+    exercise_mass = 63.0 # kg
     metrics = process_video(video_path, body_mass=body_mass, exercise_mass=exercise_mass, exercise_type='pullups', is_display=False)
     print(f"Processed video metrics:")
     print(f"Reps: {metrics['rep_count']}")
