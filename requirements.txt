@@ -1,5 +1,12 @@
-moviepy==1.0.3
-opencv_python==4.10.0.84
-numpy==1.21.6
+Flask_Migrate==4.1.0
 ultralytics==8.3.18
-apscheduler==3.10.4
+moviepy==1.0.3
+Flask_SQLAlchemy==2.5.1
+APScheduler==3.10.4
+Flask_Admin==1.6.1
+Flask==1.1.2
+opencv_python==4.10.0.84
+Werkzeug==2.0.2
+numpy==1.21.6
+Flask_Login==0.6.3
+alembic==1.13.1
