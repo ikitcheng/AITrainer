@@ -7,8 +7,6 @@ from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
-import cv2
-import numpy as np
 import sys
 from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
