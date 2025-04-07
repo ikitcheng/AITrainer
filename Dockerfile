@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set environment variables
-ENV FLASK_APP=leaderboard/app.py
+ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 ENV PORT=5000
 
@@ -29,6 +29,5 @@ ENV PORT=5000
 EXPOSE $PORT
 
 # Command to run migrations and start the application
-CMD cd leaderboard && \
-    flask db upgrade && \
-    python app.py 
+WORKDIR /app/leaderboard
+CMD flask db upgrade && python app.py
