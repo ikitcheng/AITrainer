@@ -350,7 +350,10 @@ if __name__ == '__main__':
         db.create_all()
         create_admin_user()
         cleanup_old_videos()
-    app.run(debug=True, use_reloader=False)
+    
+    # Use PORT environment variable if available
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
 # Ensure scheduler is shut down when the app exits
 import atexit
