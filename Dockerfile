@@ -30,4 +30,4 @@ EXPOSE $PORT
 
 # Command to run migrations and start the application
 WORKDIR /app/leaderboard
-CMD flask db upgrade && python app.py
+CMD python app.py
