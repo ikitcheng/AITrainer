@@ -10,3 +10,5 @@ Werkzeug==3.0.3
 numpy==1.26.4
 Flask_Login==0.6.3
 alembic==1.13.1
+git+https://github.com/idoshr/flask-mongoengine.git@1.0.1#egg=flask-mongoengine
+pymongo==4.12.0
