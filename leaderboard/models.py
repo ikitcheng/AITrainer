@@ -10,7 +10,8 @@ class User(UserMixin, db.Document):
     password_hash = db.StringField(max_length=256)
     is_admin = db.BooleanField(default=False)
     created_at = db.DateTimeField(default=datetime.utcnow)
-    
+    google_id = db.StringField(max_length=100, unique=True, sparse=True)  # Optional Google ID
+    profile_picture = db.StringField(max_length=255)  # URL to profile picture
     meta = {'collection': 'users'}
 
     def get_id(self):
@@ -18,6 +19,21 @@ class User(UserMixin, db.Document):
 
     def __repr__(self):
         return f'<User {self.username}>'
+    
+    @classmethod
+    def get_or_create_from_google(cls, google_user_info):
+        """Get or create a user from Google OAuth data"""
+        user = cls.objects(google_id=google_user_info['sub']).first()
+        if not user:
+            # Create new user with Google data
+            user = cls(
+                username=google_user_info['email'].split('@')[0],  # Use email prefix as username
+                email=google_user_info['email'],
+                google_id=google_user_info['sub'],
+                profile_picture=google_user_info.get('picture', '')
+            )
+            user.save()
+        return user
 
 class Workout(db.Document):
     user = db.ReferenceField(document_type=User, required=True)
