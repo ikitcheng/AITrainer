@@ -16,7 +16,6 @@
                 <div class="col-md-4">
                     <label for="exercise_type" class="form-label">Exercise Type</label>
                     <select class="form-select" id="exercise_type" name="exercise_type">
-                        <option value="all" {% if not exercise_type %}selected{% endif %}>All Exercises</option>
                         <option value="pullups" {% if exercise_type == 'pullups' %}selected{% endif %}>Pull-ups</option>
                         <option value="pushups" {% if exercise_type == 'pushups' %}selected{% endif %}>Push-ups</option>
                     </select>
