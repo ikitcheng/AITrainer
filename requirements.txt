@@ -12,3 +12,4 @@ Flask_Login==0.6.3
 alembic==1.13.1
 git+https://github.com/idoshr/flask-mongoengine.git@1.0.1#egg=flask-mongoengine
 pymongo==4.12.0
+authlib==1.5.2

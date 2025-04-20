@@ -26,6 +26,7 @@ class User(UserMixin, db.Document):
         user = cls.objects(google_id=google_user_info['sub']).first()
         if not user:
             # Create new user with Google data
+            print("Creating new Google user:")
             user = cls(
                 username=google_user_info['email'].split('@')[0],  # Use email prefix as username
                 email=google_user_info['email'],
@@ -33,6 +34,12 @@ class User(UserMixin, db.Document):
                 profile_picture=google_user_info.get('picture', '')
             )
             user.save()
+        else:
+            print("Updating existing Google user:")
+            # Update user data if needed
+            if user.profile_picture != google_user_info.get('picture', ''):
+                user.profile_picture = google_user_info.get('picture', '')
+                user.save()
         return user
 
 class Workout(db.Document):

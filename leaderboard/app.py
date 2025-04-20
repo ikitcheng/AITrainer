@@ -9,24 +9,25 @@ from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from wtforms import PasswordField
 import sys
-from dotenv import load_dotenv
 from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
 # Add parent directory to path to import workout_monitoring
 sys.path.append(str(Path(__file__).parent.parent))
 from src.workout_monitoring import process_video
-from models import db, User, Workout
+from leaderboard.database.mongodb import db, User, Workout
+from leaderboard.auth.google_auth import GoogleAuth
+from leaderboard.config.settings import settings
 
 # Environment Variables
-load_dotenv()
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key'  # Change this in production
+app.config['SECRET_KEY'] = settings.SECRET_KEY
 app.config['MONGODB_SETTINGS'] = {
-    'db': os.getenv('MONGODB_DB', default=None),
-    'host': os.getenv('MONGODB_URI', default=None)
+    'db': settings.MONGODB_DB,
+    'host': settings.MONGODB_URI
 }
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -37,6 +38,9 @@ login_manager.login_view = 'login'
 
 # Initialize database
 db.init_app(app)
+
+# Initialize Google Auth
+oauth = GoogleAuth(app)
 
 class MyAdminIndexView(AdminIndexView):
     def is_accessible(self):
@@ -105,6 +109,27 @@ def index():
     # Get public workouts for leaderboard
     public_workouts = Workout.objects(is_public=True).order_by('-max_power_per_kg').limit(10)
     return render_template('index.html', workouts=public_workouts)
+
+@app.route('/auth/google')
+def google_login():
+    redirect_uri = url_for('google_authorize', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/google/callback')
+def google_authorize():
+    token = oauth.google.authorize_access_token()
+    user_info = token['userinfo']
+    
+    if not user_info:
+        flash('Failed to verify token')
+        return redirect(url_for('login'))
+
+    # Get or create user
+    user = User.get_or_create_from_google(user_info)
+    login_user(user)
+    
+    flash(f"Successfully logged in with {user['email']}")
+    return redirect(url_for('dashboard'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -332,8 +357,7 @@ if __name__ == '__main__':
         create_admin_user()
 
     # Use PORT environment variable if available
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+    app.run(host=settings.HOST, port=settings.PORT, debug=False, use_reloader=False)
 
     # Ensure scheduler is shut down when the app exits
     import atexit
