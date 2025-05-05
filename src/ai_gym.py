@@ -87,6 +87,52 @@ class AIGym(BaseSolution):
         power = work / time_taken
         return power
 
+    def track_pullups(self, ind:int, kpts:list):
+        # Get shoulder position (kpts[0] should be shoulder joint)
+        shoulder_y = float(kpts[0][1])
+
+        if self.angle[ind] > self.down_angle and self.stage[ind] != "down":
+            # Starting position detected
+            self.start_frames[ind] = self.frame_count
+            self.start_positions[ind] = shoulder_y
+            self.stage[ind] = "down"
+        elif self.angle[ind] < self.up_angle:
+            if self.stage[ind] == "down":
+                # Completed rep
+                if self.start_frames[ind] > 0:
+                    # Calculate duration in seconds using frame count
+                    frames_elapsed = self.frame_count - self.start_frames[ind]
+                    duration = frames_elapsed / self.fps
+                    
+                    # Calculate and store power
+                    power = self.calculate_power(self.displacement, duration)
+                    if ind < len(self.power_outputs):
+                        self.power_outputs[ind].append(power)
+                    
+                    # Store duration
+                    if ind < len(self.rep_durations):
+                        self.rep_durations[ind].append(duration)
+                
+                self.count[ind] += 1
+            self.stage[ind] = "up"
+
+    def track_dips(self, ind:int, kpts:list):
+        pass
+
+    def track_pushups(self, ind:int, kpts:list):
+        if self.angle[ind] < self.down_angle:
+            if self.stage[ind] == "up":
+                self.count[ind] += 1
+            self.stage[ind] = "down"
+        elif self.angle[ind] > self.up_angle:
+            self.stage[ind] = "up"
+
+    def track_squats(self, ind:int, kpts:list):
+        pass
+
+    def track_situps(self, ind:int, kpts:list):
+        pass
+
     def monitor(self, im0, is_display:bool=False):
         """
         Monitors workouts using Ultralytics YOLO Pose Model.
@@ -137,43 +183,12 @@ class AIGym(BaseSolution):
                 kpts = [k[int(self.kpts[i])].cpu() for i in range(len(self.kpts))]
                 self.angle[ind] = self.annotator.estimate_pose_angle(*kpts)
                 
-                # Get shoulder position (assuming kpts[0] is shoulder)
-                shoulder_y = float(kpts[0][1])
-                
                 # Track movement for power calculation
                 if self.pose_type == 'pullups':
-                    if self.angle[ind] > self.down_angle and self.stage[ind] != "down":
-                        # Starting position detected
-                        self.start_frames[ind] = self.frame_count
-                        self.start_positions[ind] = shoulder_y
-                        self.stage[ind] = "down"
-                    elif self.angle[ind] < self.up_angle:
-                        if self.stage[ind] == "down":
-                            # Completed rep
-                            if self.start_frames[ind] > 0:
-                                # Calculate duration in seconds using frame count
-                                frames_elapsed = self.frame_count - self.start_frames[ind]
-                                duration = frames_elapsed / self.fps
-                                
-                                # Calculate and store power
-                                power = self.calculate_power(self.displacement, duration)
-                                if ind < len(self.power_outputs):
-                                    self.power_outputs[ind].append(power)
-                                
-                                # Store duration
-                                if ind < len(self.rep_durations):
-                                    self.rep_durations[ind].append(duration)
-                            
-                            self.count[ind] += 1
-                        self.stage[ind] = "up"
+                    self.track_pullups(ind, kpts)
 
                 elif self.pose_type == 'pushups':
-                    if self.angle[ind] < self.down_angle:
-                        if self.stage[ind] == "up":
-                            self.count[ind] += 1
-                        self.stage[ind] = "down"
-                    elif self.angle[ind] > self.up_angle:
-                        self.stage[ind] = "up"
+                    self.track_pushups(ind, kpts)
 
                 # Draw keypoints and skeleton
                 draw_kpts = self.kpts # [5,7,9,11,12,13,14,15,16]
@@ -228,4 +243,4 @@ class AIGym(BaseSolution):
 
         if is_display:
             self.display_output(im0)  # Display output image, if environment support display
-        return im0  # return an image for writing or further usage
+        return im0  # return an image
