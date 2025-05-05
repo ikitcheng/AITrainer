@@ -2,76 +2,15 @@
 
 AI Trainer helps you track exercises, count reps, and calculate your power output using computer vision.
 
-## Features
-
-- Real-time pose detection using YOLO11 pose estimation model
-- Exercise rep counting
-- Power output calculation using physics-based metrics:
-  - Power = mass × gravity × displacement / time
-  - Real-time display of power output in Watts
-  - Average power output across multiple repetitions
-- Support for different exercises (currently implemented):
-  - Pull-ups
-  - Push-ups (experimental)
-- Performance metrics display:
-  - Rep count
-  - Mass (kg)
-  - Vertical displacement (m)
-  - Time per rep (ms)
-  - Power output (W)
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd AITrainer
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Download the YOLO pose estimation model:
-```bash
-# The model will be downloaded automatically on first run
-# or you can manually place yolo11n-pose.pt in the model/ directory
-```
-
-## Usage
-
-1. Configure user parameters in `src/workout_monitoring.py`:
-```python
-USER_MASS = 60.0  # Mass of the person in kg
-DISPLACEMENT = 0.6  # Vertical distance in meters for a full rep
-```
-
-2. Run the workout monitor:
-```bash
-python src/workout_monitoring.py
-```
-
-3. Point the camera at the person exercising or use a video file:
-```python
-# For video file:
-cap = cv2.VideoCapture("path/to/your/video.mp4")
-
-# For webcam:
-cap = cv2.VideoCapture(0)
-```
-
-## How It Works
-
-1. **Pose Detection**: 
+## How it works?
+1. **Pose Estimation**: 
    - Uses YOLO11 pose estimation to detect 17 key body points
-   - Tracks specific keypoints for exercise form (e.g., shoulders, elbows, wrists for pull-ups)
-
+   - Tracks specific keypoints for exercise form (e.g., shoulders, elbows, 
+   wrists for pull-ups)
 2. **Rep Counting**:
    - Monitors angle changes between key body points
    - Detects transitions between "up" and "down" positions
    - Counts completed repetitions based on full range of motion
-
 3. **Power Calculation**:
    - Measures time duration of each rep using frame count and FPS
    - Uses physics formula: P = m × g × h / t
@@ -81,16 +20,108 @@ cap = cv2.VideoCapture(0)
      - h = vertical displacement (m)
      - t = time taken (s)
 
-## Contributing
+## Architecture
 
-Contributions are welcome! Some areas for improvement:
+1. **Frontend Service** (`leaderboard/app.py`): Handles user authentication, file uploads to Google Cloud Storage, and dashboard display.
+2. **Inference Service** (`inference_service.py`): Processes workout videos, extracts metrics, and uploads processed videos back to Google Cloud Storage.
 
-- Additional exercise types
-- Improved form detection
-- Rep quality assessment
-- Energy expenditure calculation
-- User interface for parameter adjustment
-- Support for multiple simultaneous users
+The flow of data is as follows:
+1. User uploads workout video through the frontend
+2. Frontend uploads the video to Google Cloud Storage (GCS)
+3. Frontend creates a workout record in MongoDB with "pending" status
+4. Frontend sends processing request to the inference service
+5. Inference service downloads the video from GCS, processes it, and uploads the processed video back to GCS
+6. Inference service updates the workout record in MongoDB with the metrics and "complete" status
+7. Frontend displays the processed results in the dashboard
+
+## Setup
+
+### Prerequisites
+
+- Python 3.8+
+- MongoDB
+- Google Cloud Storage account with a configured bucket
+- Google OAuth credentials (for authentication)
+
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# MongoDB settings
+MONGODB_URI=mongodb://localhost:27017/ai_trainer
+MONGODB_DB=ai_trainer
+
+# Google Cloud Storage settings
+GCS_BUCKET_NAME=your-bucket-name
+GCS_CREDENTIALS_PATH=/path/to/your/gcs-credentials.json
+
+# Google OAuth settings
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Flask settings
+SECRET_KEY=your-secret-key
+HOST=0.0.0.0
+PORT=5000
+
+# Inference service settings
+INFERENCE_HOST=0.0.0.0
+INFERENCE_PORT=5001
+INFERENCE_URL=http://localhost:5001
+```
+
+### Installation
+
+1. Clone the repository
+2. Install the requirements:
+   ```
+   pip install -r requirements.txt
+   ```
+3. Set up the environment variables as described above
+
+### Running the Services
+
+1. Start the frontend service:
+   ```
+   python leaderboard/app.py
+   ```
+
+2. Start the inference service:
+   ```
+   python inference_service.py
+   ```
+
+## Development
+
+### Project Structure
+
+```
+.
+├── leaderboard/
+│   ├── app.py                  # Frontend service
+│   ├── templates/              # HTML templates
+│   ├── static/                 # Static files
+│   ├── auth/                   # Authentication modules
+│   │   └── google_auth.py      # Google authentication
+│   ├── config/                 # Configuration
+│   │   └── settings.py         # Settings class
+│   └── database/               # Database models
+│       ├── mongodb.py          # MongoDB models
+│       └── gcs_storage.py      # GCS operations
+├── src/
+│   └── workout_monitoring.py   # Video processing logic
+├── model/                      # ML models
+├── inference_service.py        # Inference service
+└── requirements.txt            # Python dependencies
+```
+
+## Adding New Features
+
+### Adding a New Exercise Type
+
+1. Update the allowed exercise types in `leaderboard/templates/upload.html`
+2. Add support for the new exercise in `src/workout_monitoring.py`
 
 ## License
 

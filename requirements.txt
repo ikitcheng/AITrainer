@@ -13,3 +13,10 @@ alembic==1.13.1
 git+https://github.com/idoshr/flask-mongoengine.git@1.0.1#egg=flask-mongoengine
 pymongo==4.12.0
 authlib==1.5.2
+google-cloud-storage==1.42.3
+cloudpathlib==0.11.0
+
+# For development
+ipython
+pytest
+black
