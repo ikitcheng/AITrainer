@@ -8,13 +8,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from wtforms import PasswordField
-import sys
 from pathlib import Path
-from apscheduler.schedulers.background import BackgroundScheduler
-# Add parent directory to path to import workout_monitoring
+import sys
 sys.path.append(str(Path(__file__).parent.parent))
-from src.workout_monitoring import process_video
+import requests
+import tempfile
+from apscheduler.schedulers.background import BackgroundScheduler
 from leaderboard.database.mongodb import db, User, Workout
+from leaderboard.database.gcs_storage import GCSStorage
 from leaderboard.auth.google_auth import GoogleAuth
 from leaderboard.config.settings import settings
 
@@ -41,6 +42,9 @@ db.init_app(app)
 
 # Initialize Google Auth
 oauth = GoogleAuth(app)
+
+# Initialize GCS Storage
+gcs = GCSStorage()
 
 class MyAdminIndexView(AdminIndexView):
     def is_accessible(self):
@@ -209,56 +213,92 @@ def upload():
             return redirect(request.url)
 
         if file and allowed_file(file.filename):
-            # Save video file
+            # Save video file temporarily
             filename = secure_filename(file.filename)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"{current_user.id}_{timestamp}_{filename}"
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
-            # Process video and get workout metrics
-            body_mass = float(request.form['body_mass'])
-            exercise_mass = float(request.form['exercise_mass'])
-            exercise_type = request.form['exercise_type']
-            is_public = 'is_public' in request.form
-
+            # Upload to GCS
             try:
-                # Process video using workout_monitoring.py
-                metrics = process_video(
-                    filepath,
-                    body_mass=body_mass,
-                    exercise_mass=exercise_mass,
-                    exercise_type=exercise_type,
-                )
+                video_url = gcs.upload_video(filepath, str(current_user.id))
 
-                # Create workout entry
+                # Create initial workout entry with pending status
+                body_mass = float(request.form['body_mass'])
+                exercise_mass = float(request.form['exercise_mass'])
+                exercise_type = request.form['exercise_type']
+                is_public = 'is_public' in request.form
+                
                 workout = Workout(
-                    user=current_user,  # Use current_user object
+                    user=current_user,
                     body_mass=body_mass,
                     exercise_mass=exercise_mass,
                     exercise_type=exercise_type,
-                    rep_count=metrics['rep_count'],
-                    avg_power=metrics['avg_power'],
-                    max_power=metrics['max_power'],
-                    avg_power_per_kg=metrics['avg_power_per_kg'],
-                    max_power_per_kg=metrics['max_power_per_kg'],
-                    video_path=metrics['processed_video_path'],
+                    # Will be updated after processing
+                    rep_count=0,  
+                    avg_power=0,  
+                    max_power=0,  
+                    avg_power_per_kg=0,  
+                    max_power_per_kg=0,  
+                    video_path=video_url,  # Original video URL
                     is_public=is_public,
+                    status="pending"  # Add status field to Workout model
                 )
                 workout.save()
+                
+                print('Workout created in mongodb...')
 
-                flash('Workout uploaded successfully')
+                # Send request to inference service
+                inference_request_data = {
+                    "workout_id": str(workout.id),
+                    "video_url": video_url,
+                    "body_mass": body_mass,
+                    "exercise_mass": exercise_mass,
+                    "exercise_type": exercise_type
+                }
+                
+                # Make async request to inference service
+                response = requests.post(
+                    f"{settings.INFERENCE_URL}/process_workout", 
+                    json=inference_request_data
+                )
 
+                results = response.json()
+                
+                if response.status_code == 200:
+                    flash('Workout uploaded and processing started')
+                    # Update workout with processed metrics
+                    workout.update(
+                        status="complete",
+                        error_message="",
+                        rep_count=results['metrics']['rep_count'],
+                        avg_power=results['metrics']['avg_power'],
+                        max_power=results['metrics']['max_power'],
+                        avg_power_per_kg=results['metrics']['avg_power_per_kg'],
+                        max_power_per_kg=results['metrics']['max_power_per_kg'],
+                        video_path=results['processed_video_url']
+                    )
+                else:
+                    # If inference service fails, set status to error
+                    error_msg = results.get('error', 'Unknown error')
+                    workout.update(status="error", error_message=error_msg)
+                    flash(f'Error starting workout processing: {error_msg}')
+                
+                # Clean up temporary file
                 if os.path.exists(filepath):
                     os.remove(filepath)
-
+                
                 return redirect(url_for('dashboard'))
-
+            
             except Exception as e:
-                flash(f'Error processing video: {str(e)}')
+                print(f'Error uploading workout: {str(e)}')
+                flash(f'Error uploading workout: {str(e)}')
+                # Clean up temporary file
                 if os.path.exists(filepath):
                     os.remove(filepath)
-                return redirect(request.url)
+                # return redirect(request.url)
+                return redirect(url_for('upload'))
 
     return render_template('upload.html')
 
@@ -275,7 +315,7 @@ def leaderboard():
                            exercise_type=exercise_type,
                            sort_by=sort_by)
 
-@app.route('/toggle_visibility/<workout_id>', methods=['POST'])  # Include workout_id in the route
+@app.route('/toggle_visibility/<workout_id>', methods=['POST'])  
 @login_required
 def toggle_visibility(workout_id):
     workout = Workout.objects(id=workout_id).first()
@@ -291,7 +331,7 @@ def toggle_visibility(workout_id):
     flash(f'Workout is now {visibility_status}')
     return redirect(url_for('dashboard'))
 
-@app.route('/delete_workout/<workout_id>', methods=['POST'])  # Include workout_id in the route
+@app.route('/delete_workout/<workout_id>', methods=['POST'])  
 @login_required
 def delete_workout(workout_id):
     workout = Workout.objects(id=workout_id).first()
@@ -300,11 +340,18 @@ def delete_workout(workout_id):
         flash('You do not have permission to delete this workout')
         return redirect(url_for('dashboard'))
 
+    # Delete video from GCS if exists
+    if workout.video_path:
+        try:
+            gcs.delete_video(workout.video_path)
+        except Exception as e:
+            app.logger.error(f"Error deleting video from GCS: {e}")
+    
     workout.delete()
     flash('Workout deleted successfully')
     return redirect(url_for('dashboard'))
 
-@app.route('/download_video/<workout_id>', methods=['GET'])  # Include workout_id in the route
+@app.route('/download_video/<workout_id>', methods=['GET'])  
 @login_required
 def download_video(workout_id):
     workout = Workout.objects(id=workout_id).first()
@@ -314,11 +361,27 @@ def download_video(workout_id):
         return redirect(url_for('dashboard'))
 
     video_path = workout.video_path
-    if not video_path or not os.path.exists(video_path):
+    if not video_path:
         flash('Processed video not found')
         return redirect(url_for('dashboard'))
 
-    return send_file(video_path, as_attachment=True)
+    try:
+        # Create temporary file to download from GCS
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
+            temp_path = temp_file.name
+        
+        # Download from GCS to temporary file
+        gcs.download_video(video_path, temp_path)
+        
+        return send_file(
+            temp_path, 
+            as_attachment=True, 
+            download_name=f"workout_{workout_id}.mp4",
+            mimetype='video/mp4'
+        )
+    except Exception as e:
+        flash(f'Error downloading video: {str(e)}')
+        return redirect(url_for('dashboard'))
 
 # Create initial admin user
 def create_admin_user():
@@ -332,24 +395,8 @@ def create_admin_user():
         )
         admin.save()
 
-def cleanup_old_videos():
-    """Delete processed videos older than 1 day and update database records."""
-    cutoff_date = datetime.now() - timedelta(days=1)
-    old_workouts = Workout.objects(created_at__lt=cutoff_date, video_path__ne=None)
-
-    for workout in old_workouts:
-        if os.path.exists(workout.video_path):
-            try:
-                os.remove(workout.video_path)
-                workout.video_path = None
-                workout.save()
-                app.logger.info(f"Deleted old video for workout ID {workout.id}")
-            except Exception as e:
-                app.logger.error(f"Error deleting video for workout ID {workout.id}: {str(e)}")
-
-# Initialize the scheduler (run once a day)
+# Initialize the scheduler
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=cleanup_old_videos, trigger="interval", days=1)
 scheduler.start()
 
 if __name__ == '__main__':
