@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     
     # Google Cloud Storage settings
     GCS_BUCKET_NAME: str = os.getenv('GCS_BUCKET_NAME', default=None)
-    GCS_CREDENTIALS_PATH: Optional[str] = os.getenv('GCS_CREDENTIALS_PATH', default=None)
+    GCS_CREDENTIALS_PATH: str = os.getenv('GCS_CREDENTIALS_PATH', default=None)
     
     # Google OAuth settings
     GOOGLE_CLIENT_ID: str = os.getenv('GOOGLE_CLIENT_ID', default=None)
@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     # File upload settings
     MAX_CONTENT_LENGTH: int = 16 * 1024 * 1024  # 16MB
     ALLOWED_EXTENSIONS: set = {'mp4', 'avi', 'mov'}
+    
+    # Inference service settings
+    INFERENCE_HOST: str = "0.0.0.0"
+    INFERENCE_PORT: int = 5001
+    INFERENCE_URL: str = "http://localhost:5001"
     
     class Config:
         env_file = ".env"
