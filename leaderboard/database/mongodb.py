@@ -52,9 +52,11 @@ class Workout(db.Document):
     max_power = db.FloatField(required=True)  # Maximum power in Watts
     avg_power_per_kg = db.FloatField(required=True)  # Average power per kg
     max_power_per_kg = db.FloatField(required=True)  # Maximum power per kg
-    video_path = db.StringField(max_length=255)  # Path to stored video
+    video_path = db.StringField(max_length=255)  # Path to stored video or GCS URL
     is_public = db.BooleanField(default=False)  # Whether to show on leaderboard
     created_at = db.DateTimeField(default=datetime.utcnow)
+    status = db.StringField(max_length=20, default="complete", choices=["pending", "processing", "complete", "error"])
+    error_message = db.StringField(max_length=500)  # Error message if processing failed
     
     meta = {'collection': 'workouts'}
 
