@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.mongoengine import ModelView
@@ -297,7 +297,7 @@ def upload():
                 # Clean up temporary file
                 if os.path.exists(filepath):
                     os.remove(filepath)
-                # return redirect(request.url)
+
                 return redirect(url_for('upload'))
 
     return render_template('upload.html')
@@ -373,12 +373,24 @@ def download_video(workout_id):
         # Download from GCS to temporary file
         gcs.download_video(video_path, temp_path)
         
-        return send_file(
-            temp_path, 
-            as_attachment=True, 
-            download_name=f"workout_{workout_id}.mp4",
-            mimetype='video/mp4'
-        )
+        def generate_and_remove(file_path):
+            with open(file_path, 'rb') as f:
+                while True:
+                    chunk = f.read(4096)
+                    if not chunk:
+                        break
+                    yield chunk
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                app.logger.error(f"Error deleting temp file: {e}")
+        
+        return Response(generate_and_remove(temp_path),
+                mimetype='video/mp4',
+                headers={
+                    'Content-Disposition': f'attachment; filename=workout_{workout_id}.mp4'
+                })
+
     except Exception as e:
         flash(f'Error downloading video: {str(e)}')
         return redirect(url_for('dashboard'))
