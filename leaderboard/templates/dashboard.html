@@ -97,10 +97,8 @@
                                     <td>{{ workout.exercise_mass }}</td>
                                     <td>{{ workout.exercise_type|title }}</td>
                                     <td>
-                                        {% if workout.status == 'pending' %}
+                                        {% if workout.status == 'processing' %}
                                             <span class="badge bg-warning">Processing</span>
-                                        {% elif workout.status == 'processing' %}
-                                            <span class="badge bg-info">Processing</span>
                                         {% elif workout.status == 'error' %}
                                             <span class="badge bg-danger" data-bs-toggle="tooltip" title="{{ workout.error_message }}">Error</span>
                                         {% else %}
@@ -123,6 +121,12 @@
                                                 <a href="{{ url_for('download_video', workout_id=workout.id) }}" class="btn btn-sm btn-primary">
                                                     Download
                                                 </a>
+                                            {% elif workout.status == 'error' and workout.video_path %}
+                                                <form method="POST" action="{{ url_for('process_video', workout_id=workout.id) }}" style="display: inline;">
+                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                        Retry
+                                                    </button>
+                                                </form>
                                             {% endif %}
                                             <form method="POST" action="{{ url_for('toggle_visibility', workout_id=workout.id) }}" style="display: inline;">
                                                 <button type="submit" class="btn btn-sm btn-secondary">

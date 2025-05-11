@@ -243,48 +243,12 @@ def upload():
                     max_power_per_kg=0,  
                     video_path=video_url,  # Original video URL
                     is_public=is_public,
-                    status="pending"  # Add status field to Workout model
+                    status="processing"  # Add status field to Workout model
                 )
                 workout.save()
-                
                 print('Workout created in mongodb...')
+                process_video(workout.id)
 
-                # Send request to inference service
-                inference_request_data = {
-                    "workout_id": str(workout.id),
-                    "video_url": video_url,
-                    "body_mass": body_mass,
-                    "exercise_mass": exercise_mass,
-                    "exercise_type": exercise_type
-                }
-                
-                # Make async request to inference service
-                response = requests.post(
-                    f"{settings.INFERENCE_URL}/process_workout", 
-                    json=inference_request_data
-                )
-
-                results = response.json()
-                
-                if response.status_code == 200:
-                    flash('Workout uploaded and processing started')
-                    # Update workout with processed metrics
-                    workout.update(
-                        status="complete",
-                        error_message="",
-                        rep_count=results['metrics']['rep_count'],
-                        avg_power=results['metrics']['avg_power'],
-                        max_power=results['metrics']['max_power'],
-                        avg_power_per_kg=results['metrics']['avg_power_per_kg'],
-                        max_power_per_kg=results['metrics']['max_power_per_kg'],
-                        video_path=results['processed_video_url']
-                    )
-                else:
-                    # If inference service fails, set status to error
-                    error_msg = results.get('error', 'Unknown error')
-                    workout.update(status="error", error_message=error_msg)
-                    flash(f'Error starting workout processing: {error_msg}')
-                
                 # Clean up temporary file
                 if os.path.exists(filepath):
                     os.remove(filepath)
@@ -294,14 +258,66 @@ def upload():
             except Exception as e:
                 print(f'Error uploading workout: {str(e)}')
                 flash(f'Error uploading workout: {str(e)}')
+                
                 # Clean up temporary file
                 if os.path.exists(filepath):
                     os.remove(filepath)
 
-                return redirect(url_for('upload'))
+                return redirect(url_for('dashboard'))
 
     return render_template('upload.html')
 
+
+@app.route('/process_video/<workout_id>', methods=['POST'])
+def process_video(workout_id):
+    try:
+        workout = Workout.objects(id=workout_id).first()
+        
+        # Prepare json data for inference service
+        inference_request_data = {
+            "workout_id": str(workout.id),
+            "video_url": str(workout.video_path),
+            "body_mass": workout.body_mass,
+            "exercise_mass": workout.exercise_mass,
+            "exercise_type": workout.exercise_type
+        }
+        
+        # Make async request to inference service
+        response = requests.post(
+            f"{settings.INFERENCE_URL}/process_workout", 
+            json=inference_request_data
+        )
+
+        results = response.json()
+
+        if response.status_code == 200:
+            flash('Workout uploaded and processing started')
+            # Update workout with processed metrics
+            workout.update(
+                status="complete",
+                error_message="",
+                rep_count=results['metrics']['rep_count'],
+                avg_power=results['metrics']['avg_power'],
+                max_power=results['metrics']['max_power'],
+                avg_power_per_kg=results['metrics']['avg_power_per_kg'],
+                max_power_per_kg=results['metrics']['max_power_per_kg'],
+                video_path=results['processed_video_url']
+            )
+            flash(f'Workout processing complete.')
+            return redirect(url_for('dashboard'))
+        else:
+            # If inference service fails, set status to error
+            error_msg = results.get('error', 'Unknown error')
+            workout.update(status="error", error_message=error_msg)
+            flash(f'Error starting workout processing: {error_msg}')
+            return redirect(url_for('dashboard'))
+
+    except Exception as e:
+        print(f'Error calling /process_video endpoint: {str(e)}')
+        workout.update(status="error", error_message=str(e))
+
+        return redirect(url_for('dashboard'))
+    
 @app.route('/leaderboard')
 def leaderboard():
     exercise_type = request.args.get('exercise_type', 'pullups')
