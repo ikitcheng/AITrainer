@@ -267,12 +267,18 @@ def upload():
 
     return render_template('upload.html')
 
+# Initialize the scheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
 
-@app.route('/process_video/<workout_id>', methods=['POST'])
-def process_video(workout_id):
+def process_video_background(workout_id):
+    """Background task to process video and update workout metrics"""
     try:
         workout = Workout.objects(id=workout_id).first()
-        
+        if not workout:
+            print(f"Workout {workout_id} not found")
+            return
+
         # Prepare json data for inference service
         inference_request_data = {
             "workout_id": str(workout.id),
@@ -282,7 +288,7 @@ def process_video(workout_id):
             "exercise_type": workout.exercise_type
         }
         
-        # Make async request to inference service
+        # Make request to inference service
         response = requests.post(
             f"{settings.INFERENCE_URL}/process_workout", 
             json=inference_request_data
@@ -291,7 +297,6 @@ def process_video(workout_id):
         results = response.json()
 
         if response.status_code == 200:
-            flash('Workout uploaded and processing started')
             # Update workout with processed metrics
             workout.update(
                 status="complete",
@@ -303,21 +308,43 @@ def process_video(workout_id):
                 max_power_per_kg=results['metrics']['max_power_per_kg'],
                 video_path=results['processed_video_url']
             )
-            flash(f'Workout processing complete.')
-            return redirect(url_for('dashboard'))
         else:
             # If inference service fails, set status to error
             error_msg = results.get('error', 'Unknown error')
             workout.update(status="error", error_message=error_msg)
-            flash(f'Error starting workout processing: {error_msg}')
-            return redirect(url_for('dashboard'))
 
     except Exception as e:
-        print(f'Error calling /process_video endpoint: {str(e)}')
+        print(f'Error processing video: {str(e)}')
         workout.update(status="error", error_message=str(e))
 
+@app.route('/process_video/<workout_id>', methods=['POST'])
+def process_video(workout_id):
+    try:
+        workout = Workout.objects(id=workout_id).first()
+        if not workout:
+            flash('Workout not found')
+            return redirect(url_for('dashboard'))
+
+        # Update status to processing
+        workout.update(status="processing")
+        
+        # Schedule background task
+        scheduler.add_job(
+            process_video_background,
+            'date',
+            run_date=datetime.now(),
+            args=[workout_id]
+        )
+        
+        flash('Workout uploaded and processing started')
         return redirect(url_for('dashboard'))
-    
+
+    except Exception as e:
+        print(f'Error scheduling video processing: {str(e)}')
+        workout.update(status="error", error_message=str(e))
+        flash('Error starting workout processing')
+        return redirect(url_for('dashboard'))
+
 @app.route('/leaderboard')
 def leaderboard():
     exercise_type = request.args.get('exercise_type', 'pullups')
@@ -422,10 +449,6 @@ def create_admin_user():
             is_admin=True
         )
         admin.save()
-
-# Initialize the scheduler
-scheduler = BackgroundScheduler()
-scheduler.start()
 
 if __name__ == '__main__':
     with app.app_context():
