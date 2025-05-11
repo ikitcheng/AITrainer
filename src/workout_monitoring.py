@@ -6,7 +6,8 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 from src.ai_gym import AIGym
 
-def process_video(video_path: str, body_mass: float, exercise_mass: float, exercise_type: str = "pullups", displacement: float = 0.6, is_display:bool=False) -> dict:
+def process_video(video_path: str, body_mass: float, exercise_mass: float, exercise_type: str = "pullups",
+                   up_angle: float = 120, down_angle: float = 150, displacement: float = 0.6, is_display:bool=False) -> dict:
     """
     Process a workout video and return metrics.
     
@@ -15,7 +16,10 @@ def process_video(video_path: str, body_mass: float, exercise_mass: float, exerc
         body_mass: User's mass in kg
         exercise_mass: Mass being lifted in exercise (in kg)
         exercise_type: Type of exercise (default: "pullups")
+        up_angle: The angle (in degrees) at which the rep is in the 'up' phase.
+        down_angle: The angle (in degrees) at which the rep is in the 'down' phase.
         displacement: Vertical displacement in meters (default: 0.6)
+        is_display: Display output image or not (default: False).
     
     Returns:
         dict: Dictionary containing workout metrics:
@@ -50,8 +54,8 @@ def process_video(video_path: str, body_mass: float, exercise_mass: float, exerc
         show=True,
         kpts=[5, 7, 9],  # Left shoulder, left elbow, left wrist
         lw=2,
-        up_angle=120,
-        down_angle=145,
+        up_angle=up_angle,
+        down_angle=down_angle,
         pose_type=exercise_type,
         model=f"{str(root)}/model/yolo11n-pose.pt",
         exercise_mass=exercise_mass,

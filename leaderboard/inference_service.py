@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
 from src.workout_monitoring import process_video
+from src.config import exercise_settings
 from leaderboard.database.mongodb import Workout, User, db
 from leaderboard.database.gcs_storage import GCSStorage
 from leaderboard.config.settings import settings
@@ -67,6 +68,10 @@ def process_workout():
             body_mass=float(data['body_mass']),
             exercise_mass=float(data['exercise_mass']),
             exercise_type=data['exercise_type'],
+            up_angle=exercise_settings[data['exercise_type']]['up_angle'],
+            down_angle=exercise_settings[data['exercise_type']]['down_angle'],
+            displacement=exercise_settings[data['exercise_type']]['displacement'],
+            is_display=False
         )
         
         # Get processed video path
