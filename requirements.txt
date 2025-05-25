@@ -5,16 +5,24 @@ Flask_SQLAlchemy==3.1.1
 APScheduler==3.11.0
 Flask_Admin==1.6.1
 Flask==3.0.3
+Flask-WTF==1.2.2
+WTForms==3.2.1
 opencv_python==4.10.0.84
 Werkzeug==3.0.3
 numpy==1.26.4
 Flask_Login==0.6.3
 alembic==1.13.1
 git+https://github.com/idoshr/flask-mongoengine.git@1.0.1#egg=flask-mongoengine
+mongoengine==0.29.1
 pymongo==4.12.0
 authlib==1.5.2
 google-cloud-storage==1.42.3
-cloudpathlib==0.11.0
+cloudpathlib==0.21.0
+pydantic_settings==2.8.1
+pydantic==2.8.2
+python-dotenv==1.0.0
+fastapi==0.115.12
+requests==2.31.0
 
 # For development
 ipython

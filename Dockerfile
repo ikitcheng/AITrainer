@@ -1,15 +1,17 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
 # Install system dependencies required for OpenCV
 RUN apt-get update && apt-get install -y \
+    git \
     libgl1-mesa-glx \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     ffmpeg \
+    curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,15 +25,16 @@ COPY . .
 # Set environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
+ENV HOST=0.0.0.0
 ENV PORT=5000
+ENV INFERENCE_HOST=0.0.0.0
+ENV INFERENCE_PORT=5001
 
-# Make the startup script executable
-RUN chmod +x /app/leaderboard/start.sh
+# Create necessary directories
+RUN mkdir -p leaderboard/uploads leaderboard/auth
 
 # Expose the ports
-EXPOSE $PORT
+EXPOSE 5000
 EXPOSE 5001
 
-# Command to run both services
-WORKDIR /app/leaderboard
-CMD ["/app/leaderboard/start.sh"]
+# no need Command, see docker-compose

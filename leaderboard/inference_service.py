@@ -20,6 +20,13 @@ app.config['MONGODB_SETTINGS'] = {
 db.init_app(app)
 gcs = GCSStorage()
 
+@app.route('/health', methods=['GET'])
+def health():
+    """
+    Simple health check endpoint
+    """
+    return jsonify({"status": "ok"}), 200
+
 @app.route('/process_workout', methods=['POST'])
 def process_workout():
     """
