@@ -8,7 +8,7 @@ load_dotenv()
 class Settings(BaseSettings):
     # MongoDB settings
     MONGODB_URI: str = os.getenv('MONGODB_URI', default=None)
-    MONGODB_DB: str = os.getenv('MONGODB_DB', default=None),
+    MONGODB_DB: str = os.getenv('MONGODB_DB', default=None)
     
     # Google Cloud Storage settings
     GCS_BUCKET_NAME: str = os.getenv('GCS_BUCKET_NAME', default=None)
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Application settings
     SECRET_KEY: str = os.getenv('SECRET_KEY', 'your-secret-key')
     DEBUG: bool = False
-    HOST: str = "localhost"#"0.0.0.0"
+    HOST: str = "0.0.0.0" #"localhost"
     PORT: int = 5000
     
     # Model settings
