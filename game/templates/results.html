@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Workout Results{% endblock %}
+
+{% block extra_css %}
+<style>
+    .results-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .results-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .results-header h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1rem;
+    }
+
+    .results-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-value {
+        font-size: 3rem;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .action-button {
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+
+    .action-button:hover {
+        transform: scale(1.05);
+    }
+
+    .share-button {
+        background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+    }
+
+    .try-again-button {
+        background: var(--card-bg);
+        color: white;
+        border: 2px solid var(--primary-color);
+    }
+
+    .home-button {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div class="results-header">
+        <h1>Workout Complete!</h1>
+        <p class="lead">Great job! Here's how you did:</p>
+    </div>
+
+    <div class="results-stats">
+        <div class="stat-card">
+            <div class="stat-value" id="totalReps">0</div>
+            <div class="stat-label">Total Reps</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalTime">0</div>
+            <div class="stat-label">Time (s)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="powerOutput">0</div>
+            <div class="stat-label">Power (W)</div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn action-button share-button" id="shareButton">
+            <i class="bi bi-share-fill me-2"></i>Share Results
+        </button>
+        <button class="btn action-button try-again-button" id="tryAgainButton">
+            <i class="bi bi-arrow-repeat me-2"></i>Try Again
+        </button>
+        <button class="btn action-button home-button" id="homeButton">
+            <i class="bi bi-house-fill me-2"></i>Home
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/results.js"></script>
+{% endblock %} 

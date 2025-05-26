@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Workout{% endblock %}
+
+{% block extra_css %}
+<style>
+    .workout-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .camera-container {
+        position: relative;
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        border-radius: 15px;
+        overflow: hidden;
+        background: var(--card-bg);
+    }
+
+    #camera-feed {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .position-box {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80%;
+        height: 80%;
+        border: 4px solid var(--primary-color);
+        border-radius: 10px;
+        pointer-events: none;
+    }
+
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        padding: 1.5rem;
+        border-radius: 15px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .countdown-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .countdown-number {
+        font-size: 8rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .instructions {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .ready-button {
+        display: block;
+        width: 100%;
+        max-width: 300px;
+        margin: 2rem auto;
+        padding: 1rem;
+        font-size: 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="workout-container">
+    <div class="instructions" id="instructions">
+        <h2>Position Yourself</h2>
+        <p>Stand in the center of the frame and make sure your entire body is visible inside the box. The workout will start automatically when you are ready.</p>
+    </div>
+
+    <div class="camera-container" id="cameraContainer">
+        <video id="camera-feed" autoplay playsinline></video>
+        <div class="position-box"></div>
+    </div>
+
+    <!-- Show stats during the exercise -->
+    <div class="stats-container" id="statsContainer" style="display: none;">
+        <div class="stat-card">
+            <div class="stat-value" id="repCount">0</div>
+            <div class="stat-label">Reps</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="timer">0</div>
+            <div class="stat-label">Time</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="powerOutput">0</div>
+            <div class="stat-label">Power (W)</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/workout.js"></script>
+{% endblock %} 

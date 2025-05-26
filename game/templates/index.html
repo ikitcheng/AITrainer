@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Workout Trainer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-purple-900 min-h-screen text-white">
+    <div id="app" class="container mx-auto px-4 py-8">
+        <!-- Home Screen -->
+        <div id="home-screen" class="text-center">
+            <h1 class="text-5xl font-bold mb-8 animate-pulse">AI Workout Trainer</h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div class="bg-white/10 p-6 rounded-lg backdrop-blur-lg">
+                    <h2 class="text-2xl font-bold mb-4">Exercise Type</h2>
+                    <select id="exercise-type" class="w-full p-2 rounded bg-white/20 text-white">
+                        <option value="pushups">Push-ups</option>
+                        <option value="pullups">Pull-ups</option>
+                        <option value="squats">Squats</option>
+                    </select>
+                </div>
+                <div class="bg-white/10 p-6 rounded-lg backdrop-blur-lg">
+                    <h2 class="text-2xl font-bold mb-4">Mode</h2>
+                    <select id="workout-mode" class="w-full p-2 rounded bg-white/20 text-white">
+                        <option value="timed">Timed (1 min)</option>
+                        <option value="reps">Reps (10)</option>
+                    </select>
+                </div>
+            </div>
+            <button id="start-workout" class="mt-8 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full text-xl transition-all transform hover:scale-105">
+                Start Workout
+            </button>
+        </div>
+
+        <!-- Instructions Screen -->
+        <div id="instructions-screen" class="hidden text-center">
+            <h2 class="text-3xl font-bold mb-6">Position Yourself</h2>
+            <div class="bg-white/10 p-6 rounded-lg backdrop-blur-lg max-w-2xl mx-auto">
+                <div id="position-instructions" class="text-lg mb-6">
+                    <!-- Instructions will be dynamically updated -->
+                </div>
+                <div id="position-box" class="w-64 h-64 mx-auto border-4 border-red-500 rounded-lg mb-6">
+                    <!-- Camera feed will be shown here -->
+                </div>
+                <button id="ready-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-all transform hover:scale-105">
+                    I'm Ready
+                </button>
+            </div>
+        </div>
+
+        <!-- Workout Screen -->
+        <div id="workout-screen" class="hidden text-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div class="bg-white/10 p-6 rounded-lg backdrop-blur-lg">
+                    <h2 class="text-2xl font-bold mb-4">Timer</h2>
+                    <div id="timer" class="text-4xl font-bold">60</div>
+                </div>
+                <div class="bg-white/10 p-6 rounded-lg backdrop-blur-lg">
+                    <h2 class="text-2xl font-bold mb-4">Reps</h2>
+                    <div id="rep-counter" class="text-4xl font-bold">0</div>
+                </div>
+            </div>
+            <div id="workout-feed" class="mt-8 max-w-2xl mx-auto">
+                <!-- Workout camera feed will be shown here -->
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="hidden text-center">
+            <h2 class="text-3xl font-bold mb-8">Workout Complete!</h2>
+            <div class="bg-white/10 p-6 rounded-lg backdrop-blur-lg max-w-2xl mx-auto">
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div>
+                        <h3 class="text-xl font-bold">Reps</h3>
+                        <div id="final-reps" class="text-3xl">0</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold">Power Output</h3>
+                        <div id="power-output" class="text-3xl">0 W</div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <button id="log-result" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-all transform hover:scale-105">
+                        Log Result
+                    </button>
+                    <button id="try-again" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-all transform hover:scale-105">
+                        Try Again
+                    </button>
+                    <button id="exit-home" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-full text-lg transition-all transform hover:scale-105">
+                        Exit to Home
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
