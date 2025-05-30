@@ -1,0 +1,28 @@
+name: Deploy website to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for pushing to gh-pages branch
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for better caching and git info
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/master'  # Only deploy on master branch pushes
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # Automatically provided by GitHub
+          publish_dir: ./game_lightweight  # <-- Specify your folder here
+          publish_branch: gh-pages  # Branch to deploy to (default is gh-pages)
+          user_name: Matthew Cheng  # Commit author name
+          user_email: matthewkit@gmail.com  # Commit author email
