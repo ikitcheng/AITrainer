@@ -545,12 +545,12 @@
             <div class="setting-group">
                 <label>Workout Type:</label>
                 <select id="workoutType" class="setting-input">
+                    <option value="freestyle">Freestyle</option>
                     <option value="reps">Reps</option>
                     <option value="time">Time</option>
-                    <option value="freestyle">Freestyle</option>
                 </select>
             </div>
-            <div class="setting-group" id="repsSetting">
+            <div class="setting-group" id="repsSetting" style="display: none;">
                 <label>Target Reps:</label>
                 <input type="number" id="targetReps" class="setting-input" min="1" value="10">
             </div>
@@ -661,7 +661,7 @@
                 this.isCameraOn = true;
                 this.targetReps = 10;
                 this.targetTime = 0;
-                this.workoutType = 'reps';
+                this.workoutType = 'freestyle';
                 this.isBodyDetected = false;
                 this.countdownInterval = null;
                 this.mediaStream = null;
@@ -895,6 +895,12 @@
                     [11, 13], [13, 15], [12, 14], [14, 16] // Legs
                 ];
 
+                const keypoint_names = ['nose', 'left_eye', 'right_eye',
+                  'left_ear', 'right_ear', 'left_shoulder', 'right_shoulder',
+                  'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist',
+                  'left_hip', 'right_hip', 'left_knee', 'right_knee',
+                  'left_ankle', 'right_ankle'];
+
                 this.ctx.strokeStyle = '#ff6b35';
                 this.ctx.lineWidth = 2;
 
@@ -910,6 +916,12 @@
                     }
                 });
             }
+            
+            calcLength(x1, y1, x2, y2) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                return Math.sqrt(dx * dx + dy * dy);
+                }
 
             countReps(pose) {
                 const keypoints = pose.keypoints;
@@ -943,21 +955,39 @@
                 const rightShoulder = keypoints[6];
                 const leftElbow = keypoints[7];
                 const rightElbow = keypoints[8];
+                const leftWrist = keypoints[9];
+                const rightWrist = keypoints[10];
                 
                 if (nose.score > 0.3 && leftShoulder.score > 0.3 && rightShoulder.score > 0.3 &&
                     leftElbow.score > 0.3 && rightElbow.score > 0.3) {
                     
+                    // y measured from top of screen, x measured from right of screen
                     const avgShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
                     const avgElbowY = (leftElbow.y + rightElbow.y) / 2;
+                                        
+                    // kypt to kypt lengths
+                    const avgShoulderWristLength = (this.calcLength(leftShoulder.x, leftShoulder.y, leftWrist.x, leftWrist.y) +
+                                                    this.calcLength(rightShoulder.x, rightShoulder.y, rightWrist.x, rightWrist.y)) / 2;
+                    const avgElbowWristLength = (this.calcLength(leftElbow.x, leftElbow.y, leftWrist.x, leftWrist.y) +
+                                                this.calcLength(rightElbow.x, rightElbow.y, rightWrist.x, rightWrist.y)) / 2;
+                    const avgElbowShoulderLength = (this.calcLength(leftElbow.x, leftElbow.y, leftShoulder.x, leftShoulder.y) +
+                                                this.calcLength(rightElbow.x, rightElbow.y, rightShoulder.x, rightShoulder.y)) / 2;
                     
+                    // Method 1: use elblow angle
                     // Calculate the angle between shoulders and elbows
-                    const angle = Math.abs(Math.atan2(avgElbowY - avgShoulderY, 
-                        Math.abs(leftElbow.x - rightElbow.x)) * 180 / Math.PI);
-                    
-                    if (this.exerciseState === 'waiting' && angle < 45) {
+                    // const angle = Math.abs(Math.atan2(avgElbowY - avgShoulderY, 
+                    //     Math.abs(leftElbow.x - leftShoulder.x)) * 180 / Math.PI);
+
+                    const angle = Math.abs(Math.acos((avgElbowWristLength**2 + avgElbowShoulderLength**2 - avgShoulderWristLength**2)/
+                                          (2*avgElbowWristLength*avgElbowShoulderLength))* 180 / Math.PI)
+
+                    if ((this.exerciseState === 'waiting' || this.exerciseState === 'up') && angle < 100) {
                         this.exerciseState = 'down';
-                    } else if (this.exerciseState === 'down' && angle > 90) {
+                        console.log(this.exerciseState, angle);
+
+                    } else if (this.exerciseState === 'down' && angle > 160) {
                         this.exerciseState = 'up';
+                        console.log(this.exerciseState, angle);
                         return true; // Rep completed
                     }
                 }
