@@ -931,6 +931,9 @@
                     case 'pushups':
                         repDetected = this.detectPushup(keypoints);
                         break;
+                    case 'pullups':
+                        repsDetected = this.detectPullup(keypoints);
+                        break;
                     case 'situps':
                         repDetected = this.detectSitup(keypoints);
                         break;
@@ -948,7 +951,7 @@
                     }, 1000);
                 }
             }
-
+            
             detectPushup(keypoints) {
                 const nose = keypoints[0];
                 const leftShoulder = keypoints[5];
@@ -958,13 +961,12 @@
                 const leftWrist = keypoints[9];
                 const rightWrist = keypoints[10];
                 
-                if (nose.score > 0.3 && leftShoulder.score > 0.3 && rightShoulder.score > 0.3 &&
-                    leftElbow.score > 0.3 && rightElbow.score > 0.3) {
+                if (nose.score > 0.3 && 
+                    leftShoulder.score > 0.3 && rightShoulder.score > 0.3 &&
+                    leftElbow.score > 0.3 && rightElbow.score > 0.3 &&
+                    leftWrist.score > 0.3 && rightWrist.score > 0.3) {
                     
                     // y measured from top of screen, x measured from right of screen
-                    const avgShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
-                    const avgElbowY = (leftElbow.y + rightElbow.y) / 2;
-                                        
                     // kypt to kypt lengths
                     const avgShoulderWristLength = (this.calcLength(leftShoulder.x, leftShoulder.y, leftWrist.x, leftWrist.y) +
                                                     this.calcLength(rightShoulder.x, rightShoulder.y, rightWrist.x, rightWrist.y)) / 2;
@@ -974,10 +976,6 @@
                                                 this.calcLength(rightElbow.x, rightElbow.y, rightShoulder.x, rightShoulder.y)) / 2;
                     
                     // Method 1: use elblow angle
-                    // Calculate the angle between shoulders and elbows
-                    // const angle = Math.abs(Math.atan2(avgElbowY - avgShoulderY, 
-                    //     Math.abs(leftElbow.x - leftShoulder.x)) * 180 / Math.PI);
-
                     const angle = Math.abs(Math.acos((avgElbowWristLength**2 + avgElbowShoulderLength**2 - avgShoulderWristLength**2)/
                                           (2*avgElbowWristLength*avgElbowShoulderLength))* 180 / Math.PI)
 
@@ -994,27 +992,80 @@
                 return false;
             }
 
-            detectSitup(keypoints) {
+            detectPullup(keypoints) {
                 const nose = keypoints[0];
-                const leftHip = keypoints[11];
-                const rightHip = keypoints[12];
                 const leftShoulder = keypoints[5];
                 const rightShoulder = keypoints[6];
+                const leftElbow = keypoints[7];
+                const rightElbow = keypoints[8];
+                const leftWrist = keypoints[9];
+                const rightWrist = keypoints[10];
                 
-                if (nose.score > 0.3 && leftHip.score > 0.3 && rightHip.score > 0.3 &&
+                if (nose.score > 0.3 && 
+                    leftShoulder.score > 0.3 && rightShoulder.score > 0.3 &&
+                    leftElbow.score > 0.3 && rightElbow.score > 0.3 &&
+                    leftWrist.score > 0.3 && rightWrist.score > 0.3) {
+                    
+                    // y measured from top of screen, x measured from right of screen
+                    const avgShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+                    const avgElbowY = (leftElbow.y + rightElbow.y) / 2;
+                                        
+                    // kypt to kypt lengths
+                    const avgShoulderWristLength = (this.calcLength(leftShoulder.x, leftShoulder.y, leftWrist.x, leftWrist.y) +
+                                                    this.calcLength(rightShoulder.x, rightShoulder.y, rightWrist.x, rightWrist.y)) / 2;
+                    const avgElbowWristLength = (this.calcLength(leftElbow.x, leftElbow.y, leftWrist.x, leftWrist.y) +
+                                                this.calcLength(rightElbow.x, rightElbow.y, rightWrist.x, rightWrist.y)) / 2;
+                    const avgElbowShoulderLength = (this.calcLength(leftElbow.x, leftElbow.y, leftShoulder.x, leftShoulder.y) +
+                                                this.calcLength(rightElbow.x, rightElbow.y, rightShoulder.x, rightShoulder.y)) / 2;
+                    
+                    // Method 1: use elblow angle
+                    const angle = Math.abs(Math.acos((avgElbowWristLength**2 + avgElbowShoulderLength**2 - avgShoulderWristLength**2)/
+                                          (2*avgElbowWristLength*avgElbowShoulderLength))* 180 / Math.PI)
+
+                    if ((this.exerciseState === 'waiting' || this.exerciseState === 'down') && angle < 100) {
+                        this.exerciseState = 'up';
+                        console.log(this.exerciseState, angle);
+
+                    } else if (this.exerciseState === 'up' && angle > 160) {
+                        this.exerciseState = 'down';
+                        console.log(this.exerciseState, angle);
+                        return true; // Rep completed
+                    }
+                }
+                return false;
+            }
+
+            detectSitup(keypoints) {
+                const leftShoulder = keypoints[5];
+                const rightShoulder = keypoints[6];
+                const leftHip = keypoints[11];
+                const rightHip = keypoints[12];
+                const leftKnee = keypoints[13];
+                const rightKnee = keypoints[14];
+                
+                if (leftKnee.score > 0.3 && rightKnee.score > 0.3 && 
+                    leftHip.score > 0.3 && rightHip.score > 0.3 &&
                     leftShoulder.score > 0.3 && rightShoulder.score > 0.3) {
                     
-                    const avgHipY = (leftHip.y + rightHip.y) / 2;
-                    const avgShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+                    // kypt to kypt lengths
+                    const avgShoulderKneeLength = (this.calcLength(leftShoulder.x, leftShoulder.y, leftKnee.x, leftKnee.y) +
+                                                    this.calcLength(rightShoulder.x, rightShoulder.y, rightKnee.x, rightKnee.y)) / 2;
+                    const avgHipKneeLength = (this.calcLength(leftHip.x, leftHip.y, leftKnee.x, leftKnee.y) +
+                                                this.calcLength(rightHip.x, rightHip.y, rightKnee.x, rightKnee.y)) / 2;
+                    const avgHipShoulderLength = (this.calcLength(leftHip.x, leftHip.y, leftShoulder.x, leftShoulder.y) +
+                                                this.calcLength(rightHip.x, rightHip.y, rightShoulder.x, rightShoulder.y)) / 2;
                     
-                    // Calculate the angle between hips and shoulders
-                    const angle = Math.abs(Math.atan2(avgShoulderY - avgHipY, 
-                        Math.abs(leftShoulder.x - rightShoulder.x)) * 180 / Math.PI);
-                    
-                    if (this.exerciseState === 'waiting' && angle < 45) {
-                        this.exerciseState = 'down';
-                    } else if (this.exerciseState === 'down' && angle > 90) {
+                    // Method 1: use hip angle
+                    const angle = Math.abs(Math.acos((avgHipKneeLength**2 + avgHipShoulderLength**2 - avgShoulderKneeLength**2)/
+                                          (2*avgHipKneeLength*avgHipShoulderLength))* 180 / Math.PI)
+
+                    if ((this.exerciseState === 'waiting' || this.exerciseState === 'down') && angle < 100) {
                         this.exerciseState = 'up';
+                        console.log(this.exerciseState, angle);
+
+                    } else if (this.exerciseState === 'up' && angle > 160) {
+                        this.exerciseState = 'down';
+                        console.log(this.exerciseState, angle);
                         return true; // Rep completed
                     }
                 }
@@ -1037,18 +1088,25 @@
                     const avgKneeY = (leftKnee.y + rightKnee.y) / 2;
                     const avgAnkleY = (leftAnkle.y + rightAnkle.y) / 2;
                     
-                    // Calculate the angle between hips and knees
-                    const hipKneeAngle = Math.abs(Math.atan2(avgKneeY - avgHipY, 
-                        Math.abs(leftKnee.x - rightKnee.x)) * 180 / Math.PI);
-                    
-                    // Calculate the angle between knees and ankles
-                    const kneeAnkleAngle = Math.abs(Math.atan2(avgAnkleY - avgKneeY, 
-                        Math.abs(leftAnkle.x - rightAnkle.x)) * 180 / Math.PI);
-                    
-                    if (this.exerciseState === 'waiting' && hipKneeAngle < 45 && kneeAnkleAngle < 45) {
+                    // kypt to kypt lengths
+                    const avgHipAnkleLength = (this.calcLength(leftHip.x, leftHip.y, leftAnkle.x, leftAnkle.y) +
+                                                    this.calcLength(rightHip.x, rightHip.y, rightAnkle.x, rightAnkle.y)) / 2;
+                    const avgKneeAnkleLength = (this.calcLength(leftKnee.x, leftKnee.y, leftAnkle.x, leftAnkle.y) +
+                                                this.calcLength(rightKnee.x, rightKnee.y, rightAnkle.x, rightAnkle.y)) / 2;
+                    const avgKneeHipLength = (this.calcLength(leftKnee.x, leftKnee.y, leftHip.x, leftHip.y) +
+                                                this.calcLength(rightKnee.x, rightKnee.y, rightHip.x, rightHip.y)) / 2;
+
+                    // Method 1: use knee angle
+                    const angle = Math.abs(Math.acos((avgKneeAnkleLength**2 + avgKneeHipLength**2 - avgHipAnkleLength**2)/
+                                            (2*avgKneeAnkleLength*avgKneeHipLength))* 180 / Math.PI)
+
+                    if ((this.exerciseState === 'waiting' || this.exerciseState === 'up') && angle < 100) {
                         this.exerciseState = 'down';
-                    } else if (this.exerciseState === 'down' && hipKneeAngle > 90 && kneeAnkleAngle > 90) {
+                        console.log(this.exerciseState, angle);
+
+                    } else if (this.exerciseState === 'down' && angle > 160) {
                         this.exerciseState = 'up';
+                        console.log(this.exerciseState, angle);
                         return true; // Rep completed
                     }
                 }
