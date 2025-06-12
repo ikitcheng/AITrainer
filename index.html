@@ -932,7 +932,7 @@
                         repDetected = this.detectPushup(keypoints);
                         break;
                     case 'pullups':
-                        repsDetected = this.detectPullup(keypoints);
+                        repDetected = this.detectPullup(keypoints);
                         break;
                     case 'situps':
                         repDetected = this.detectSitup(keypoints);
@@ -1006,10 +1006,7 @@
                     leftElbow.score > 0.3 && rightElbow.score > 0.3 &&
                     leftWrist.score > 0.3 && rightWrist.score > 0.3) {
                     
-                    // y measured from top of screen, x measured from right of screen
-                    const avgShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
-                    const avgElbowY = (leftElbow.y + rightElbow.y) / 2;
-                                        
+                    // y measured from top of screen, x measured from right of screen                                        
                     // kypt to kypt lengths
                     const avgShoulderWristLength = (this.calcLength(leftShoulder.x, leftShoulder.y, leftWrist.x, leftWrist.y) +
                                                     this.calcLength(rightShoulder.x, rightShoulder.y, rightWrist.x, rightWrist.y)) / 2;
