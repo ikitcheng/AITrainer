@@ -1023,7 +1023,10 @@
                         this.exerciseState = 'up';
                         console.log(this.exerciseState, angle);
 
-                    } else if (this.exerciseState === 'up' && angle > 160) {
+                    } else if (this.exerciseState === 'up' && angle > 160 &&
+                              // wrist is above shoulder
+                               leftWrist.y < leftShoulder.y &&
+                               rightWrist.y < rightShoulder.y) {
                         this.exerciseState = 'down';
                         console.log(this.exerciseState, angle);
                         return true; // Rep completed
